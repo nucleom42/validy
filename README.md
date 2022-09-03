@@ -81,6 +81,7 @@ pry(main)> isnstance.foo = ''
 pry(main)> isnstance.validate!
 
 => Validy::Error, 'type_error: not an integer'
+```
 
 ## Install
 
