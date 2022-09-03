@@ -4,6 +4,8 @@ require 'spec_helper'
 
 class ValidyFoo
   include Validy
+  validy_on method: :validate # must be implemented method which includes validations
+
   attr_accessor :foo, :fool, :foolish
 
   def initialize(foo = nil, fool = 10, foolish = 0)
@@ -13,10 +15,11 @@ class ValidyFoo
   end
 
   def call
+    return unless valid?
+
     foo + fool - foolish
   end
 
-  # must be implemented validate or validate!, the only difference that validate will raise an error in case of invalid
   def validate
     required(:foo).type(Integer, { type_error: 'not an integer' })
                   .condition(proc { @foo > 2 }, error: 'foo must be bigger than 2')
@@ -41,6 +44,8 @@ end
 
 class ValidyFool
   include Validy
+  validy_on method: :validate!
+
   attr_accessor :foo, :fool, :foolish
 
   def initialize(foo = nil, fool = 10, foolish = 0)
@@ -50,13 +55,15 @@ class ValidyFool
   end
 
   def call
+    return unless valid?
+
     foo + fool - foolish
   end
 
   # must be implemented validate or validate!, the only difference that validate will raise an error in case of invalid
   def validate!
     required(:foo).type(Integer, { type_error: 'not an integer' })
-                  .condition(proc { @foo > 2 }, error: 'foo must be bigger than 2')
+      .condition(proc { @foo > 2 }, error: 'foo must be bigger than 2')
 
     required(:fool).type(Integer).condition(:bigger_than_three?, 'fool must be bigger than 3')
 
@@ -108,7 +115,7 @@ describe Validy do
         context 'when validate!' do
           it 'raise an error' do
             expect { valid_instance.validate! }
-              .to raise_error(Validy::ValidyError).with_message('type_error: not an integer')
+              .to raise_error(Validy::Error).with_message('type_error: not an integer')
           end
         end
       end
@@ -127,7 +134,7 @@ describe Validy do
 
       it 'validate! raise an error' do
         expect { invalid_instance.validate! }
-          .to raise_error(Validy::ValidyError).with_message('error: foo must be bigger than 2')
+          .to raise_error(Validy::Error).with_message('error: foo must be bigger than 2')
       end
     end
   end
@@ -146,14 +153,14 @@ describe Validy do
 
       it 'validate! not to raise an error' do
         valid_instance.foo = 'oioi'
-        expect { valid_instance.validate! }.to raise_error(Validy::ValidyError)
+        expect { valid_instance.validate! }.to raise_error(Validy::Error)
       end
     end
 
     context 'when invalid instance' do
       it 'invalid instance raise error' do
-        expect(ValidyFool.new('1', '11')).to raise_error(Validy::ValidyError)
-          .with_message('error: foo must be bigger than 2')
+        expect { ValidyFool.new('1', '11') }.to raise_error(Validy::Error)
+          .with_message('type_error: not an integer')
       end
     end
   end

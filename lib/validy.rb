@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 module Validy
-  ValidyError = Class.new(StandardError)
+  Error = Class.new(StandardError)
   NotImplementedError = Class.new(StandardError)
   OverImplemented = Class.new(StandardError)
 
   def self.included(base)
+    base.send(:extend, ClassMethods)
     base.send(:include, InstanceMethods)
     base.prepend(Initializer)
   end
@@ -15,21 +16,45 @@ module Validy
       @errors = {}
       @valid = true
       @evaluating_attribute = nil
-      super
-      # perform checks and eventually set valid state of the instantiated object
-      # validate! instance method must be implemented otherwise it will raise an error
-      # if respond_to?(:validate) && respond_to?(:validate!)
-      #   raise OverImplemented, 'Only one method `validate` or `validate!` must be implemented'
-      # end
 
-      if respond_to? :validate
-        validate
-      elsif respond_to? :validate!
-        validate!
-        raise ValidyError, stringified_error unless valid?
+      super
+
+      if method_presented?(method_without_bang)
+        send(method_without_bang)
+      elsif method_presented?(method_with_bang)
+        send(method_with_bang)
       else
-        raise NotImplementedError, 'validate or validate! method must be implemented!'
+        raise NotImplementedError, 'validy method given from validy_on method: argument, must be implemented!'
       end
+    end
+  end
+
+  module ClassMethods
+    def validy_on(method:)
+      method_with_bang_name = (method[-1] == '!' ? method.to_s : "#{method}!")
+      method_without_bang_name = method_with_bang_name.gsub('!', '')
+
+      define_method :method_with_bang do
+        method_with_bang_name
+      end
+
+      define_method :method_without_bang do
+        method_without_bang_name
+      end
+
+      hooks = Module.new do
+        method_with_bang_name = (method[-1] == '!' ? method.to_s : "#{method}!")
+        method_without_bang_name = method_with_bang_name.gsub('!', '')
+        define_method method_with_bang_name do |*args, &block|
+          if method_presented?(method_without_bang_name)
+            send(method_without_bang_name, *args, &block)
+          else
+            super(*args, &block)
+          end
+          raise ::Validy::Error, stringified_error unless valid?
+        end
+      end
+      prepend hooks
     end
   end
 
@@ -83,19 +108,17 @@ module Validy
     def type(clazz, error = nil, &block)
       return self unless valid?
 
-      validate_condition(@evaluating_attribute&.is_a?(clazz), error || "#{@evaluating_attribute} is not a type #{clazz}", &block)
+      validate_condition(@evaluating_attribute&.is_a?(clazz),
+                         error || "#{@evaluating_attribute} is not a type #{clazz}", &block)
       self
     end
 
-    refine self do
-      def validate!
-        puts 'Before'
-        super
-        puts 'After'
-      end
-    end
-
     private
+
+    def method_presented?(method)
+      method_to_symed = method.to_sym
+      methods.any? { |m| m == method_to_symed }
+    end
 
     def stringified_error
       errors.inject(String.new) { |s, h| s << "#{h[0]}: #{h[1]}" }
@@ -114,26 +137,6 @@ module Validy
       add_error(error_hash)
 
       block.call if block_given?
-    end
-
-    def method_missing(method, *_args)
-      case method
-        when :validate!
-          return unless respond_to?(:validate)
-
-          validate
-          raise ValidyError, stringified_error unless valid?
-        when :validate
-          return unless respond_to?(:validate!)
-
-          validate!
-        else
-          raise ArgumentError, "Method `#{method}` doesn't exist."
-      end
-    end
-
-    def respond_to_missing?(method_name, include_private = false)
-      method_name[/validate|!/] || super
     end
   end
 end
