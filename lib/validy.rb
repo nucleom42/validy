@@ -18,9 +18,9 @@ module Validy
       super
       # perform checks and eventually set valid state of the instantiated object
       # validate! instance method must be implemented otherwise it will raise an error
-      if respond_to?(:validate) && respond_to?(:validate!)
-        raise OverImplemented, 'Only one method `validate` or `validate!` must be implemented'
-      end
+      # if respond_to?(:validate) && respond_to?(:validate!)
+      #   raise OverImplemented, 'Only one method `validate` or `validate!` must be implemented'
+      # end
 
       if respond_to? :validate
         validate
