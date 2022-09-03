@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-source "http://rubygems.org"
+source 'https://rubygems.org'
 gemspec
 
-gem "rake"
+gem 'rake'
 
 group :test do
-  gem "rspec"
+  gem 'rspec'
 end
 
 group :development, :test do
-  gem 'pry'
+  gem 'pry', '~> 0.13.1'
   gem 'pry-nav'
   gem 'rubocop'
 end

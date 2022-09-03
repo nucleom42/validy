@@ -1,33 +1,13 @@
 # frozen_string_literal: true
 
 module Validy
-  Error = Class.new(StandardError)
+  ValidyError = Class.new(StandardError)
   NotImplementedError = Class.new(StandardError)
+  OverImplemented = Class.new(StandardError)
 
   def self.included(base)
     base.send(:include, InstanceMethods)
-    base.send(:extend, ClassMethods)
     base.prepend(Initializer)
-  end
-  
-  module ClassMethods
-    def validable_setters(factor = true)
-      return unless factor
-
-      instance_variables.each do |name|
-        next unless self.instance_methods.include?("#{name}=".to_sym)
-
-        define_method("#{name}=") do |value|
-          instance_variable_set("@#{name}", value)
-          validate
-        end
-      end
-    end
-    
-    def validable_setters!(factor = true)
-      @raise = true
-      validable_setters(factor)
-    end
   end
 
   module Initializer
@@ -35,17 +15,20 @@ module Validy
       @errors = {}
       @valid = true
       @evaluating_attribute = nil
-      @raise = false
       super
       # perform checks and eventually set valid state of the instantiated object
       # validate! instance method must be implemented otherwise it will raise an error
+      if respond_to?(:validate) && respond_to?(:validate!)
+        raise OverImplemented, 'Only one method `validate` or `validate!` must be implemented'
+      end
+
       if respond_to? :validate
         validate
       elsif respond_to? :validate!
-        @raise = true
         validate!
+        raise ValidyError, stringified_error unless valid?
       else
-        raise ::Validy::NotImplementedError, 'validate or validate! method must be implemented!'
+        raise NotImplementedError, 'validate or validate! method must be implemented!'
       end
     end
   end
@@ -100,18 +83,28 @@ module Validy
     def type(clazz, error = nil, &block)
       return self unless valid?
 
-      validate_condition(
-        @evaluating_attribute&.is_a?(clazz), error || "#{@evaluating_attribute} is not a type #{clazz}", &block
-      )
+      validate_condition(@evaluating_attribute&.is_a?(clazz), error || "#{@evaluating_attribute} is not a type #{clazz}", &block)
       self
+    end
+
+    refine self do
+      def validate!
+        puts 'Before'
+        super
+        puts 'After'
+      end
     end
 
     private
 
-    def error_hash(e)
-      return e if e.is_a?(Hash)
+    def stringified_error
+      errors.inject(String.new) { |s, h| s << "#{h[0]}: #{h[1]}" }
+    end
 
-      { error: e }
+    def error_hash(error)
+      return error if error.is_a?(Hash)
+
+      { error: error }
     end
 
     def validate_condition(condition, error = nil, &block)
@@ -121,7 +114,26 @@ module Validy
       add_error(error_hash)
 
       block.call if block_given?
-      raise ::Error, error_hash.to_json if @raise
+    end
+
+    def method_missing(method, *_args)
+      case method
+        when :validate!
+          return unless respond_to?(:validate)
+
+          validate
+          raise ValidyError, stringified_error unless valid?
+        when :validate
+          return unless respond_to?(:validate!)
+
+          validate!
+        else
+          raise ArgumentError, "Method `#{method}` doesn't exist."
+      end
+    end
+
+    def respond_to_missing?(method_name, include_private = false)
+      method_name[/validate|!/] || super
     end
   end
 end
