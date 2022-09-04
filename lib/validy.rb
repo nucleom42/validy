@@ -109,7 +109,7 @@ module Validy
       return self unless valid?
 
       validate_condition(@evaluating_attribute&.is_a?(clazz),
-                         error || "#{@evaluating_attribute} is not a type #{clazz}", &block)
+                         error || "`#{@evaluating_attribute}` is not a type #{clazz}", &block)
       self
     end
 

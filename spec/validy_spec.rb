@@ -83,6 +83,36 @@ class ValidyFool
   end
 end
 
+class FooWithCustomDefinedMethod
+  include Validy
+  validy_on method: :kraken
+
+  attr_accessor :foo
+
+  def initialize(foo = nil)
+    @foo = foo
+  end
+
+  def kraken
+    required(:foo).type(Integer)
+  end
+end
+
+class FooWithCustomDefinedMethodBang
+  include Validy
+  validy_on method: :kraken!
+
+  attr_accessor :foo
+
+  def initialize(foo = nil)
+    @foo = foo
+  end
+
+  def kraken!
+    required(:foo).type(Integer)
+  end
+end
+
 describe Validy do
   describe '#validate' do
     context 'when valid instance' do
@@ -161,6 +191,49 @@ describe Validy do
       it 'invalid instance raise error' do
         expect { ValidyFool.new('1', '11') }.to raise_error(Validy::Error)
           .with_message('type_error: not an integer')
+      end
+    end
+  end
+
+  context 'when defined custom validation action method' do
+    context 'when wrapped to method without bang' do
+      let(:valid_instance) { FooWithCustomDefinedMethod.new(1) }
+
+      it 'valid? returns true' do
+        expect(valid_instance.valid?).to eq true
+      end
+
+      it 'errors returns {}' do
+        expect(valid_instance.errors).to eq({})
+      end
+
+      it 'kraken! not to raise an error' do
+        valid_instance.foo = 'oioi'
+        expect { valid_instance.kraken! }.to raise_error(Validy::Error)
+      end
+    end
+
+    context 'when wrapped to method without bang' do
+      let(:valid_instance) { FooWithCustomDefinedMethodBang.new(1) }
+
+      it 'valid? returns true' do
+        expect(valid_instance.valid?).to eq true
+      end
+
+      it 'errors returns {}' do
+        expect(valid_instance.errors).to eq({})
+      end
+
+      it 'kraken! not to raise an error' do
+        valid_instance.foo = 'oioi'
+        expect { valid_instance.kraken! }.to raise_error(Validy::Error)
+      end
+
+      context 'when instance is invalid' do
+        it 'invalid instance raise error' do
+          expect { FooWithCustomDefinedMethodBang.new('1') }
+            .to raise_error(Validy::Error).with_message('error: `1` is not a type Integer')
+        end
       end
     end
   end
