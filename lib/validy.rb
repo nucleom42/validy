@@ -30,6 +30,8 @@ module Validy
   end
 
   module ClassMethods
+    # @param [String] method - indicates custom, must be implemented method for which will be triggered for defining
+    # validation state
     def validy_on(method:)
       method_with_bang_name = (method[-1] == '!' ? method.to_s : "#{method}!")
       method_without_bang_name = method_with_bang_name.gsub('!', '')
@@ -79,6 +81,9 @@ module Validy
     end
 
     # "condition" evaluates either passed block or instance method represented in the instance
+    # @param [String|block] method or callable object which will be triggered for validation
+    # @param [String|Hash] error definition
+    # @param [Proc] block
     def condition(method, error = nil, &block)
       return self unless valid?
 
@@ -88,6 +93,9 @@ module Validy
     end
 
     # "required" checks presence of the variable
+    # @param [String] attribute a target one
+    # @param [String|Hash] error custom defined error message
+    # @param [Proc] block
     def required(attribute, error = nil, &block)
       return self unless valid?
 
@@ -97,6 +105,7 @@ module Validy
     end
 
     # "optional" starts void validation for the given attribute
+    # @param [String] attribute a target one
     def optional(attribute)
       return self unless valid?
 
@@ -105,6 +114,9 @@ module Validy
     end
 
     # "type" validates type of the instance variable
+    # @param [Object] clazz for checking type of the target attribute
+    # @param [nil] error custom defined error message
+    # @param [Proc] block
     def type(clazz, error = nil, &block)
       return self unless valid?
 
