@@ -17,6 +17,7 @@
 * Implement **validation action method** with either inbuilt validation methods ( required, optional, type, condition ) or mannual ones.
 * When your class will be instantiated like MyClass.new or trigger validation will be processed,
 * by explicitly call **validation action method** without or with the bang ( Raising an error will be reflected correspondingly )
+
 **Notes:**
 
 * Wants to force raising an exception while creating an object if validation failed? Add to your **validation action method** bang postfix
