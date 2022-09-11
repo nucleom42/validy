@@ -6,19 +6,21 @@
 
 **Problem:**
 
-* Want to have a easy way to validate instance variables in plain ruby object like in Active Record? 
+* Want to have an easy way to validate instance variables in plain ruby object like in Active Record model?
 * Wants to easily enrich you class with validation methods like: **valid?, errors** ..?
 * Wants to standardize you code for services where responsibility is near to validation?
 
 **Solution:**
 
 * Just include Validy into your class
-* Indicate a name of the **validation action method** with validy_on helper
-* And instantiate your class as usual with MyClass.new or trigger validation process, by explicitly call **validation action method** without or with bang. Raising an error will be reflected correspondingly
-
+* Define a name of the **validation action method** with validy_on helper method
+* Implement **validation action method** with either inbuilt validation methods ( required, optional, type, condition ) or mannual ones.
+* When your class will be instantiated like MyClass.new or trigger validation will be processed,
+* by explicitly call **validation action method** without or with the bang ( Raising an error will be reflected correspondingly )
 **Notes:**
 
-* Wants to force raising an exception while creating an object if validation failed? Add to your **validation action method** with bang
+* Wants to force raising an exception while creating an object if validation failed? Add to your **validation action method** bang postfix
+* and that will do all of the magic!
 
 ## Examples
 
@@ -26,7 +28,7 @@
 
 class ValidyFoo
   include Validy
-  validy_on method: :validate # must be implemented method, which will be triggered for defining valid state of the instance.
+  validy_on method: :validate # must be implemented method, which will be target for triggering while defining valid state of the target instance.
 
   attr_accessor :foo, :fool, :foolish
 
@@ -37,12 +39,12 @@ class ValidyFoo
   end
 
   def call
-    #  a way of preventing main method execution manual unless you want continue logic neglecting validation state
+    #  a way of preventing main method execution manualy unless you want continue logic neglecting validation state
     return unless valid?
     # logic
     foo + fool - foolish
   end
-  
+
   # if method will have bang at the end (i.e validate!), first fail will raise an error
   def validate
     # for performing validation you can chain predefined validation methods for each variable:
