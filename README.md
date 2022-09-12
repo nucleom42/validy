@@ -29,7 +29,10 @@
 
 class ValidyFoo
   include Validy
-  validy_on method: :validate # must be implemented method, which will be target for triggering while defining valid state of the target instance.
+  # must be implemented method, which will be target for triggering 
+  # while defining valid state of the target instance.
+  validy_on method: :validate, setters: [:fool]
+  # you can also set setters list for firing validation check
 
   attr_accessor :foo, :fool, :foolish
 
@@ -78,6 +81,15 @@ pry(main)> isnstance.valid?
 
 pry(main)> isnstance.foo = ''
 pry(main)> isnstance.validate
+pry(main)> isnstance.valid?
+
+=> false
+
+# it is not necessary to call explicitly validate
+# because fool in the setter list  defined in the config
+# so validate for all instance variables will be triggered
+# once setter fool been used
+pry(main)> isnstance.fool = ''
 pry(main)> isnstance.valid?
 
 => false

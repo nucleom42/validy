@@ -31,8 +31,9 @@ module Validy
 
   module ClassMethods
     # @param [String] method - indicates custom, must be implemented method for which will be triggered for defining
+    # @param [Array<String>] - optional, list of the instance variables for checking valid state while using setter
     # validation state
-    def validy_on(method:)
+    def validy_on(method:, setters: [])
       method_with_bang_name = (method[-1] == '!' ? method.to_s : "#{method}!")
       method_without_bang_name = method_with_bang_name.gsub('!', '')
 
@@ -54,6 +55,15 @@ module Validy
             super(*args, &block)
           end
           raise ::Validy::Error, stringified_error unless valid?
+        end
+
+        if setters.any?
+          setters.each do |name|
+            define_method("#{name}=".to_sym) do |val|
+              instance_variable_set("@#{name}", val)
+              method[-1] == '!' ? send(method_with_bang) : send(method_without_bang)
+            end
+          end
         end
       end
       prepend hooks

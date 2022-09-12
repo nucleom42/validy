@@ -37,7 +37,9 @@ describe Validy do
         end
 
         def validate
-          required(:foo).type(Integer, { type_error: 'not an integer' }).condition(proc { @foo > 2 }, error: 'foo must be bigger than 2')
+          required(:foo).type(Integer, { type_error: 'not an integer' }).condition(proc {
+                                                                                     @foo > 2
+                                                                                   }, error: 'foo must be bigger than 2')
 
           required(:fool).type(Integer).condition(:bigger_than_three?, 'fool must be bigger than 3')
 
@@ -105,7 +107,9 @@ describe Validy do
       end
 
       it 'validate! raise an error' do
-        expect { invalid_instance.validate! }.to raise_error(Validy::Error).with_message('error: foo must be bigger than 2')
+        expect do
+          invalid_instance.validate!
+        end.to raise_error(Validy::Error).with_message('error: foo must be bigger than 2')
       end
     end
   end
@@ -132,7 +136,9 @@ describe Validy do
 
         # must be implemented validate or validate!, the only difference that validate will raise an error in case of invalid
         def validate!
-          required(:foo).type(Integer, { type_error: 'not an integer' }).condition(proc { @foo > 2 }, error: 'foo must be bigger than 2')
+          required(:foo).type(Integer, { type_error: 'not an integer' }).condition(proc {
+                                                                                     @foo > 2
+                                                                                   }, error: 'foo must be bigger than 2')
 
           required(:fool).type(Integer).condition(:bigger_than_three?, 'fool must be bigger than 3')
 
@@ -172,7 +178,9 @@ describe Validy do
 
     context 'when invalid instance' do
       it 'invalid instance raise error' do
-        expect { klass_validate_with_bang.new('1', '11') }.to raise_error(Validy::Error).with_message('type_error: not an integer')
+        expect do
+          klass_validate_with_bang.new('1', '11')
+        end.to raise_error(Validy::Error).with_message('type_error: not an integer')
       end
     end
   end
@@ -247,8 +255,50 @@ describe Validy do
 
       context 'when instance is invalid' do
         it 'invalid instance raise error' do
-          expect { klass_with_custom_method.new('1') }.to raise_error(Validy::Error).with_message('error: `1` is not a type Integer')
+          expect do
+            klass_with_custom_method.new('1')
+          end.to raise_error(Validy::Error).with_message('error: `1` is not a type Integer')
         end
+      end
+    end
+
+    context 'when define setters list' do
+      let(:klass_with_setters_list) do
+        Class.new do
+          include Validy
+          validy_on method: :validate, setters: [:one]
+
+          attr_accessor :one, :two
+
+          def initialize(one, two)
+            @one = one
+            @two = two
+          end
+
+          def call
+            puts "#{one} and #{two}"
+          end
+
+          def validate
+            required(:one).type(String)
+            required(:two).type(String)
+          end
+        end
+      end
+
+      let(:valid_instance) { klass_with_setters_list.new('1', '2') }
+
+      it 'valid? returns true' do
+        expect(valid_instance.valid?).to eq true
+      end
+
+      it 'errors returns {}' do
+        expect(valid_instance.errors).to eq({})
+      end
+
+      it 'validate! to raise an error' do
+        valid_instance.one = 1
+        expect(valid_instance.valid?).to eq false
       end
     end
   end
