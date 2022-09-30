@@ -15,7 +15,7 @@ module Validy
     def initialize(*)
       @errors = {}
       @valid = true
-      @evaluating_attribute = nil
+      @evaluating_attribute_value = nil
 
       super
 
@@ -84,6 +84,12 @@ module Validy
       @valid
     end
 
+    # "invalid?" returns opposite value of inner valid state
+    # @return [Boolean]
+    def invalid?
+      !valid?
+    end
+
     # "errors" returns errors hash
     # @return [Hash]
     def errors
@@ -96,6 +102,7 @@ module Validy
     # @param [Proc] block
     def condition(method, error = nil, &block)
       return self unless valid?
+      return self if skip_optional?
 
       condition = method.respond_to?(:call) ? method.call : send(method)
       validate_condition(condition, error, &block)
@@ -109,8 +116,8 @@ module Validy
     def required(attribute, error = nil, &block)
       return self unless valid?
 
-      @evaluating_attribute = instance_variable_get("@#{attribute}")
-      validate_condition(@evaluating_attribute, error || "#{attribute} required!", &block)
+      @evaluating_attribute_value = instance_variable_get("@#{attribute}")
+      validate_condition(@evaluating_attribute_value, error || "#{attribute} required!", &block)
       self
     end
 
@@ -119,7 +126,8 @@ module Validy
     def optional(attribute)
       return self unless valid?
 
-      @evaluating_attribute = instance_variable_get("@#{attribute}")
+      @optional = true
+      @evaluating_attribute_value = instance_variable_get("@#{attribute}")
       self
     end
 
@@ -129,13 +137,20 @@ module Validy
     # @param [Proc] block
     def type(clazz, error = nil, &block)
       return self unless valid?
+      return self if skip_optional?
 
-      validate_condition(@evaluating_attribute&.is_a?(clazz),
-                         error || "`#{@evaluating_attribute}` is not a type #{clazz}", &block)
+      validate_condition(@evaluating_attribute_value&.is_a?(clazz),
+                         error || "`#{@evaluating_attribute_value}` is not a type #{clazz}", &block)
       self
     end
 
     private
+
+    def skip_optional?
+      return false unless @optional
+
+      @evaluating_attribute_value.nil?
+    end
 
     def method_presented?(method)
       method_to_symed = method.to_sym
@@ -155,8 +170,8 @@ module Validy
     def validate_condition(condition, error = nil, &block)
       return if condition
 
-      error_hash = error_hash(error)
-      add_error(error_hash)
+      error_hash = error_hash error
+      add_error error_hash
 
       block.call if block_given?
     end

@@ -37,9 +37,8 @@ describe Validy do
         end
 
         def validate
-          required(:foo).type(Integer, { type_error: 'not an integer' }).condition(proc {
-                                                                                     @foo > 2
-                                                                                   }, error: 'foo must be bigger than 2')
+          required(:foo).type(Integer, { type_error: 'not an integer' })
+                        .condition(proc { @foo > 2 }, error: 'foo must be bigger than 2')
 
           required(:fool).type(Integer).condition(:bigger_than_three?, 'fool must be bigger than 3')
 
@@ -266,11 +265,11 @@ describe Validy do
       let(:klass_with_setters_list) do
         Class.new do
           include Validy
-          validy_on method: :validate, setters: [:one]
+          validy_on method: :validate, setters: %i[one undefined]
 
           attr_accessor :one, :two
 
-          def initialize(one, two)
+          def initialize(one, two = nil)
             @one = one
             @two = two
           end
@@ -281,12 +280,12 @@ describe Validy do
 
           def validate
             required(:one).type(String)
-            required(:two).type(String)
+            optional(:two).type(String)
           end
         end
       end
 
-      let(:valid_instance) { klass_with_setters_list.new('1', '2') }
+      let(:valid_instance) { klass_with_setters_list.new('1') }
 
       it 'valid? returns true' do
         expect(valid_instance.valid?).to eq true
@@ -296,9 +295,14 @@ describe Validy do
         expect(valid_instance.errors).to eq({})
       end
 
-      it 'validate! to raise an error' do
+      it 'validate! turn inner state to invalid' do
         valid_instance.one = 1
         expect(valid_instance.valid?).to eq false
+      end
+
+      it 'does not change validation state if optional parameter is not given' do
+        valid_instance.two = 2
+        expect(valid_instance.valid?).to eq true
       end
     end
   end

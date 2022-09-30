@@ -22,6 +22,21 @@
 
 * Wants to force raising an exception while creating an object if validation failed? Add to your **validation action method** bang postfix
 * and that will do all of the magic!
+## Install
+
+```ruby
+
+gem install validy
+
+```
+
+## Rails
+
+```ruby
+
+gem 'validy'
+
+```
 
 ## Examples
 
@@ -29,10 +44,10 @@
 
 class ValidyFoo
   include Validy
-  # must be implemented method, which will be target for triggering 
-  # while defining valid state of the target instance.
+  # Must be implemented method, which will be assigned for triggering 
+  # while defining valid inner state of the targeted instance.
   validy_on method: :validate, setters: [:fool]
-  # you can also set setters list for firing validation check
+  # You can also able to assign each setter for firing validation check
 
   attr_accessor :foo, :fool, :foolish
 
@@ -43,30 +58,38 @@ class ValidyFoo
   end
 
   def call
-    #  a way of preventing main method execution manualy unless you want continue logic neglecting validation state
+    # The guard approach of preventing `main` method execution manually
+    # unless you want continue logic neglecting validation state
     return unless valid?
-    # logic
+    # Custom logic
     foo + fool - foolish
   end
 
-  # if method will have bang at the end (i.e validate!), first fail will raise an error
+  # If method will have bang at the end (i.e validate!),
+  # first fail will raise an error
   def validate
-    # for performing validation you can chain predefined validation methods for each variable:
-    # `required`, `optional`, `type`, `condition`
+    
+    # For performing validation you can either:
+    #   * chain predefined validation methods for each variable:
+    #     `required`, `optional`, `type`, `condition`
+    #   * or call custom one
+    
+    # Example of chaining predefined validation methods with ability
+    # to assign custom error hash or message
     required(:foo).type(Integer, { type_error: 'not an integer' })
                   .condition(proc { @foo > 2 }, error: 'foo must be bigger than 2')
-    # each method except custom error message, can be either string or a hash
-    required(:fool).type(Integer).condition(:bigger_than_three?, 'fool must be bigger than 3')
-    # Likewise you can manually add validation method
+    optional(:fool).type(Integer).condition(:bigger_than_three?, 'fool must be bigger than 3')
+    
+    # Likewise example for manually added validation method
     foolish_is_zero?
   end
 
-  # user validation method
+  # User defined validation method
   def bigger_than_three?
     @fool > 3
   end
 
-  # manual way of setting validation
+  # Manual way of setting validation method
   def foolish_is_zero?
     return unless valid?
 
@@ -85,10 +108,10 @@ pry(main)> isnstance.valid?
 
 => false
 
-# it is not necessary to call explicitly validate
-# because fool in the setter list  defined in the config
-# so validate for all instance variables will be triggered
-# once setter fool been used
+# It is not necessary to call explicitly `validate`
+# because fool in the setter's list  defined in the config.
+# So validate for all instance variables will be triggered
+# once setter for variable fool will be triggered
 pry(main)> isnstance.fool = ''
 pry(main)> isnstance.valid?
 
@@ -98,20 +121,4 @@ pry(main)> isnstance.foo = ''
 pry(main)> isnstance.validate!
 
 => Validy::Error, 'type_error: not an integer'
-```
-
-## Install
-
-```ruby
-
-gem install validy
-
-```
-
-## Rails
-
-```ruby
-
-gem 'validy'
-
 ```
