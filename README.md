@@ -7,21 +7,21 @@
 **Problem:**
 
 * Want to have an easy way to validate instance variables in plain ruby object like in Active Record model?
-* Wants to easily enrich you class with validation methods like: **valid?, errors** ..?
+* Wants to easily enrich you class with validation methods like: **valid?, invalid?, errors** ..?
 * Wants to standardize you code for services where responsibility is near to validation?
 
 **Solution:**
 
-* Just include Validy into your class
-* Define a name of the **validation action method** with validy_on helper method
-* Implement **validation action method** with either inbuilt validation methods ( required, optional, type, condition ) or mannual ones.
-* When your class will be instantiated like MyClass.new or trigger validation will be processed,
-* by explicitly call **validation action method** without or with the bang ( Raising an error will be reflected correspondingly )
+* Just include **Validy** into your class
+* Define rules for validation behaviour with **validy_on**, where:
+  1. **method** is custom defined instance method name which is expected to be implemented with validation context.
+  2. **setters** list of instance variable's names setters of which will trigger global validation context.
+* So validation context will be triggered, either when **new** instance wil be instantiated or **validation method** will be explicitly called
 
 **Notes:**
 
 * Wants to force raising an exception while creating an object if validation failed? Add to your **validation action method** bang postfix
-* and that will do all of the magic!
+and that will do all of the magic!
 ## Install
 
 ```ruby
@@ -45,7 +45,7 @@ gem 'validy'
 class ValidyFoo
   include Validy
   # Must be implemented method, which will be assigned for triggering 
-  # while defining valid inner state of the targeted instance.
+  # validation context and defining valid state of the current instance.
   validy_on method: :validate, setters: [:fool]
   # You can also able to assign each setter for firing validation check
 
@@ -59,7 +59,7 @@ class ValidyFoo
 
   def call
     # The guard approach of preventing `main` method execution manually
-    # unless you want continue logic neglecting validation state
+    # unless you want continue logic neglecting current validation state.
     return unless valid?
     # Custom logic
     foo + fool - foolish
@@ -111,7 +111,7 @@ pry(main)> isnstance.valid?
 # It is not necessary to call explicitly `validate`
 # because fool in the setter's list  defined in the config.
 # So validate for all instance variables will be triggered
-# once setter for variable fool will be triggered
+# once fool will be assigned
 pry(main)> isnstance.fool = ''
 pry(main)> isnstance.valid?
 
