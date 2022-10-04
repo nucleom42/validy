@@ -3,7 +3,8 @@
 module Validy
   Error = Class.new(StandardError)
   NotImplementedError = Class.new(StandardError)
-  OverImplemented = Class.new(StandardError)
+
+  MUST_BE_IMPLEMENTED_ERROR = 'validy method given from validy_on method: argument, must be implemented!'.freeze
 
   def self.included(base)
     base.send(:extend, ClassMethods)
@@ -15,36 +16,36 @@ module Validy
     def initialize(*)
       @errors = {}
       @valid = true
-      @evaluating_attribute_value = nil
 
       super
-
+      # trigger validations
       if method_presented?(method_without_bang)
         send(method_without_bang)
       elsif method_presented?(method_with_bang)
         send(method_with_bang)
       else
-        raise NotImplementedError, 'validy method given from validy_on method: argument, must be implemented!'
+        raise NotImplementedError, MUST_BE_IMPLEMENTED_ERROR
       end
     end
   end
 
   module ClassMethods
     # @param [String] method - indicates custom, must be implemented method for which will be triggered for defining
-    # @param [Array<String>] - optional, list of the instance variables for checking valid state while using setter
+    # @param [Array] setters - optional, list of the instance variables for checking valid state while using setter
     # validation state
+    # @return [void]
     def validy_on(method:, setters: [])
       method_with_bang_name = (method[-1] == '!' ? method.to_s : "#{method}!")
       method_without_bang_name = method_with_bang_name.gsub('!', '')
 
-      define_method :method_with_bang do
-        method_with_bang_name
-      end
+      define_validation_methods_name(method_with_bang_name, method_without_bang_name)
 
-      define_method :method_without_bang do
-        method_without_bang_name
-      end
+      define_validation_triggers(method, setters)
+    end
 
+    private
+
+    def define_validation_triggers(method, setters)
       hooks = Module.new do
         method_with_bang_name = (method[-1] == '!' ? method.to_s : "#{method}!")
         method_without_bang_name = method_with_bang_name.gsub('!', '')
@@ -54,6 +55,7 @@ module Validy
           else
             super(*args, &block)
           end
+
           raise ::Validy::Error, stringified_error unless valid?
         end
 
@@ -66,7 +68,18 @@ module Validy
           end
         end
       end
+
       prepend hooks
+    end
+
+    def define_validation_methods_name(with_bang_name, without_bang_name)
+      define_method :method_with_bang do
+        with_bang_name
+      end
+
+      define_method :method_without_bang do
+        without_bang_name
+      end
     end
   end
 
@@ -139,8 +152,10 @@ module Validy
       return self unless valid?
       return self if skip_optional?
 
-      validate_condition(@evaluating_attribute_value&.is_a?(clazz),
-                         error || "`#{@evaluating_attribute_value}` is not a type #{clazz}", &block)
+      validate_condition(
+        @evaluating_attribute_value&.is_a?(clazz),
+        error || "`#{@evaluating_attribute_value}` is not a type #{clazz}", &block
+      )
       self
     end
 
