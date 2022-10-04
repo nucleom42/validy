@@ -4,7 +4,7 @@ module Validy
   Error = Class.new(StandardError)
   NotImplementedError = Class.new(StandardError)
 
-  MUST_BE_IMPLEMENTED_ERROR = 'validy method given from validy_on method: argument, must be implemented!'.freeze
+  MUST_BE_IMPLEMENTED_ERROR = 'validy method given from validy_on method: argument, must be implemented!'
 
   def self.included(base)
     base.send(:extend, ClassMethods)
@@ -56,6 +56,11 @@ module Validy
             super(*args, &block)
           end
 
+          if instance_variable_defined?('@evaluating_attribute_value')
+            remove_instance_variable(:@evaluating_attribute_value)
+          end
+          remove_instance_variable(:@optional) if instance_variable_defined?('@optional')
+
           raise ::Validy::Error, stringified_error unless valid?
         end
 
@@ -63,7 +68,15 @@ module Validy
           setters.each do |name|
             define_method("#{name}=".to_sym) do |val|
               instance_variable_set("@#{name}", val)
+
               method[-1] == '!' ? send(method_with_bang) : send(method_without_bang)
+
+              if instance_variable_defined?('@evaluating_attribute_value')
+                remove_instance_variable(:@evaluating_attribute_value)
+              end
+              remove_instance_variable(:@optional) if instance_variable_defined?('@optional')
+
+              val
             end
           end
         end
