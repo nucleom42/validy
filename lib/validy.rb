@@ -143,7 +143,7 @@ module Validy
       return self unless valid?
 
       @evaluating_attribute_value = instance_variable_get("@#{attribute}")
-      unless @evaluating_attribute_value.instance_of?(TrueClass) || @evaluating_attribute_value.instance_of?(FalseClass)
+      unless @evaluating_attribute_value.instance_of?(FalseClass)
         validate_condition(@evaluating_attribute_value, error || "#{attribute} required!", &block)
       end
       self
