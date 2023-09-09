@@ -305,5 +305,43 @@ describe Validy do
         expect(valid_instance.valid?).to eq true
       end
     end
+
+    context 'when required boolean attribute' do
+      let(:klass_with_boolean_prop) do
+        Class.new do
+          include Validy
+          validy_on method: :validate, setters: %i[one]
+
+          attr_accessor :one
+
+          def initialize(one)
+            @one = one
+          end
+
+          def call
+            puts "#{one}"
+          end
+
+          def validate
+            required(:one).condition(proc { one.instance_of?(TrueClass) || one.instance_of?(FalseClass) }, 'not a boolean')
+          end
+        end
+      end
+
+      let(:valid_instance) { klass_with_boolean_prop.new(false) }
+
+      it 'valid? returns true' do
+        expect(valid_instance.valid?).to eq true
+      end
+
+      it 'errors returns {}' do
+        expect(valid_instance.errors).to eq({})
+      end
+
+      it 'validate! turn inner state to invalid' do
+        valid_instance.one = 1
+        expect(valid_instance.valid?).to eq false
+      end
+    end
   end
 end

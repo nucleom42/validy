@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    validy (1.1.5)
+    validy (1.1.5.1)
 
 GEM
   remote: https://rubygems.org/
@@ -53,6 +53,7 @@ GEM
 
 PLATFORMS
   arm64-darwin-21
+  x86_64-darwin-18
   x86_64-darwin-21
 
 DEPENDENCIES
